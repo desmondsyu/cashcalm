@@ -1,0 +1,73 @@
+version: '3.8'
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: cashcalm-database
+    environment:
+      MYSQL_DATABASE: cashcalm_db
+      MYSQL_USER: cashcalm_prod
+      MYSQL_PASSWORD: cashcalm_prod
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3310:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - my_network
+
+  backend:
+    build:
+      context: ./financial-system-backend
+      dockerfile: Dockerfile
+    container_name: cashcalm-backend
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-db 
+      - DB_DATABASE=cashcalm_db 
+      - DB_USERNAME=cashcalm_prod 
+      - DB_PASSWORD=cashcalm_prod 
+    ports: 
+      - "8080:8080" 
+    networks: 
+      - my_network 
+    depends_on: 
+      - mysql-db
+
+  analyics:
+    build: 
+      context: ./CashCalmVistualizationAnalyicsEndPoint
+      dockerfile: Dockerfile
+    container_name: cashcalm-analyics
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql-db 
+      - DB_DATABASE=cashcalm_db 
+      - DB_USERNAME=cashcalm_prod 
+      - DB_PASSWORD=cashcalm_prod 
+    ports: 
+      - "8080:8080" 
+    networks: 
+      - my_network 
+    depends_on: 
+      - mysql-db
+
+  frontend:
+    build:
+      context: ./financial_management_system_frontend
+      dockerfile: Dockerfile
+    container_name: cashcalm-frontend
+    environment:
+      - SHELL=/bin/bash
+    ports:
+      - "3000:80"
+    networks:
+      - my_network
+    depends_on:
+      - mysql-db
+      
+volumes:
+  db_data:
+
+networks:
+  my_network:
